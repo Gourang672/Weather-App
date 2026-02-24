@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Sun, Moon, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { useState } from "react"
 import {
   Sheet,
@@ -11,31 +10,23 @@ import {
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Navbar() {
-  const { theme, setTheme } = useTheme()
   const [open, setOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 border-b bg-background">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 border-b bg-background dark:bg-olive-900">
       <div className="flex items-center space-x-4">
         <Link href="/" className="text-xl font-bold">
           Weather App
         </Link>
       </div>
       <div className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
+        <ThemeToggle />
         <div className="hidden md:flex space-x-4">
           <Link href="/login">
-            <Button variant="ghost">Login</Button>
+            <Button variant="ghost" className="bg-neutral-100 dark:bg-neutral-800">Login</Button>
           </Link>
           <Link href="/register">
             <Button>Sign Up</Button>
