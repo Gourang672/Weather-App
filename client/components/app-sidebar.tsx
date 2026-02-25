@@ -2,17 +2,13 @@
 
 import * as React from "react"
 import {
-  BookOpen,
   Bot,
-  Frame,
   Map,
-  PieChart,
   Settings2,
   SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -33,82 +29,24 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: SquareTerminal,
       isActive: true,
-      items: [
-        {
-          title: "Current Weather",
-          url: "#",
-        },
-        {
-          title: "Forecast",
-          url: "#",
-        },
-        {
-          title: "History",
-          url: "#",
-        },
-      ],
     },
     {
-      title: "Locations",
-      url: "#",
+      title: "Cities",
+      url: "/dashboard/cities",
       icon: Map,
-      items: [
-        {
-          title: "Saved Locations",
-          url: "#",
-        },
-        {
-          title: "Search",
-          url: "#",
-        },
-      ],
+    },
+    {
+      title: "Favorites",
+      url: "/dashboard/favorites",
+      icon: Bot,
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/dashboard/settings",
       icon: Settings2,
-      items: [
-        {
-          title: "Profile",
-          url: "#",
-        },
-        {
-          title: "Preferences",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Weather Alerts",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Data Analytics",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "API Documentation",
-      url: "#",
-      icon: BookOpen,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: BookOpen,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Bot,
     },
   ],
 }
@@ -121,8 +59,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
