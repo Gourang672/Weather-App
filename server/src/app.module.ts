@@ -7,6 +7,7 @@ import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { FavoritesModule } from './apis/favorites/favorites.module';
 import { MailModule } from './apis/mail/mail.module';
+import { CityModule } from './apis/city/city.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MailModule } from './apis/mail/mail.module';
       AuthModule,
       FavoritesModule,
       MailModule,
+      CityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

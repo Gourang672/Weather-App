@@ -18,11 +18,9 @@ export class MailService {
   private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
   private templateCache = new Map<string, Handlebars.TemplateDelegate>();
-  private partialsLoaded = false;
 
   constructor(private configService: ConfigService) {
     this.initializeTransporter();
-    this.loadPartialsSafe();
   }
 
   private initializeTransporter() {
@@ -37,7 +35,7 @@ export class MailService {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
-      timeout: this.configService.get<number>('SMTP_TIMEOUT') || 10000,
+      timeout: this.configService.get<number>('SMTP_TIMEOUT'),
     };
 
     this.transporter = nodemailer.createTransport(nodemailerConfig);
@@ -88,35 +86,6 @@ export class MailService {
     return path.resolve(__dirname, './templates');
   }
 
-  private async loadPartialsSafe() {
-    try {
-      await this.loadPartials();
-    } catch (error: any) {
-      this.logger.warn(`Failed to load email partials: ${error?.message}`);
-    }
-  }
-
-  private async loadPartials() {
-    if (this.partialsLoaded) return;
-    const partialsDir = path.join(this.getTemplatesDir(), 'partials');
-    try {
-      const files = await fs.readdir(partialsDir);
-      await Promise.all(
-        files
-          .filter((f) => f.endsWith('.hbs'))
-          .map(async (file) => {
-            const name = path.basename(file, '.hbs');
-            const content = await fs.readFile(path.join(partialsDir, file), 'utf8');
-            Handlebars.registerPartial(name, content);
-          }),
-      );
-      this.partialsLoaded = true;
-    } catch (err) {
-      const msg = (err as any)?.message ?? String(err);
-      this.logger.debug(`No email partials loaded from ${partialsDir}: ${msg}`);
-    }
-  }
-
   private async getCompiledTemplate(name: string): Promise<Handlebars.TemplateDelegate> {
     if (this.templateCache.has(name)) {
       return this.templateCache.get(name) as Handlebars.TemplateDelegate;
@@ -129,8 +98,6 @@ export class MailService {
   }
 
   private async renderTemplate(name: string, context: Record<string, any>): Promise<string> {
-    await this.loadPartials();
-
     const layoutPath = path.join(this.getTemplatesDir(), 'layouts', 'main.hbs');
     let layout = '';
     try {
@@ -142,7 +109,7 @@ export class MailService {
     const template = await this.getCompiledTemplate(name);
     const baseContext = {
       year: new Date().getFullYear(),
-      appName: this.configService.get<string>('APP_NAME', 'RCS Application'),
+      appName: this.configService.get<string>('APP_NAME'),
     };
     const data = { ...baseContext, ...context };
     const body = template(data);

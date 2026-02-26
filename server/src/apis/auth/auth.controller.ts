@@ -35,8 +35,6 @@ export class AuthController {
   @HttpCode(200)
   @Post('logout')
   async logout(@Res() res: any) {
-    // With stateless JWT, instruct client to discard token. Server-side invalidation
-    // (blacklist) is out of scope for this simple implementation.
     return res.json({ ok: true });
   }
 
