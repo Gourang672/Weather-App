@@ -37,8 +37,16 @@ function FavoriteWeatherCard({
   tempUnit: 'F' | 'C'
   windUnit: 'mph' | 'kmh'
 }) {
-  const cityName = favorite.city?.name?.trim() || ""
-  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName })
+  const city = favorite?.city;
+  const cityName = (
+    typeof city === 'object' && city !== null && 'name' in city && city.name 
+      ? city.name.trim() 
+      : ""
+  );
+  
+
+  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName || cityName.length === 0 })
+  
 
   const convertTemperature = (temp: number, unit: 'F' | 'C') => {
     if (unit === 'F') return Math.round((temp * 9/5) + 32)
@@ -54,13 +62,44 @@ function FavoriteWeatherCard({
   const todayHigh = weather?.daily?.temperature_2m_max?.[0]
   const todayLow = weather?.daily?.temperature_2m_min?.[0]
 
+  // Show error if city data is missing
+  if (!cityName) {
+    return (
+      <div className="dashboard-card rounded-xl p-6 hover:shadow-lg transition-shadow">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+            <div>
+              <h4 className="font-semibold text-lg text-red-500">Invalid City</h4>
+              <p className="text-sm text-red-400">City data is missing</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(favorite._id)}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">Click delete to remove this favorite</p>
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard-card rounded-xl p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
           <div>
-            <h4 className="font-semibold text-lg">{favorite.city?.name}</h4>
+            <h4 className="font-semibold text-lg">{cityName}</h4>
             <p className="text-sm text-muted-foreground flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               {isLoading ? "Loading..." : weather?.location || "City"}
@@ -156,6 +195,14 @@ export default function FavoritesPage() {
   const { data: userFavorites, isLoading: favoritesLoading, refetch } = useGetUserFavoritesQuery()
   const [deleteFavorite, { isLoading: deleteLoading }] = useDeleteFavoriteMutation()
 
+  // Debug logging
+  useEffect(() => {
+    if (userFavorites) {
+      userFavorites.forEach((fav: any, idx: number) => {
+      })
+    }
+  }, [userFavorites])
+
   const tempUnit = user?.tempUnit || 'F'
   const windUnit = user?.windUnit || 'mph'
 
@@ -170,10 +217,13 @@ export default function FavoritesPage() {
     }
   }
 
-  const sortedFavorites = (userFavorites || []).slice().sort((a, b) => {
-    if (a.createdAt && b.createdAt) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    return b._id.localeCompare(a._id)
-  })
+  const sortedFavorites = (userFavorites || [])
+    .filter((fav) => fav.city && fav.city.name)
+    .slice()
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      return b._id.localeCompare(a._id)
+    })
 
   return (
     <>

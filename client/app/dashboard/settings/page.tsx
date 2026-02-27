@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Bell, Globe, Shield, User } from "lucide-react"
+import { Bell, Globe, Shield, User, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUpdateUserMutation, useDeleteUserMutation, useGetUserQuery } from "@/redux/apis/userApi/userApi"
 import { toast } from "sonner"
@@ -79,16 +79,17 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       return
     }
-
+    // Show a persistent loading toast while deletion is in progress
+    const toastId = toast.loading('Deleting account...')
     try {
       await deleteUser(userId).unwrap()
 
       // Clear auth token and redirect
       localStorage.removeItem('access_token')
-      toast.success('Account deleted successfully')
+      toast.success('Account deleted successfully', { id: toastId })
       router.push('/login')
     } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to delete account')
+      toast.error(error?.data?.message || 'Failed to delete account', { id: toastId })
     }
   }
 

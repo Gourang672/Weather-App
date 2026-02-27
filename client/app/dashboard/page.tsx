@@ -232,7 +232,9 @@ export default function Page() {
 
 // Component for favorite city cards
 function FavoriteCityCard({ favorite, tempUnit }: { favorite: any, tempUnit: 'F' | 'C' }) {
-  const { data: weather, isLoading, error } = useGetWeatherQuery(favorite.location)
+  const cityName = favorite?.city?.name || favorite?.location || "";
+  
+  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName });
 
   const convertTemperature = (temp: number, unit: 'F' | 'C') => {
     if (unit === 'F') {
@@ -246,7 +248,7 @@ function FavoriteCityCard({ favorite, tempUnit }: { favorite: any, tempUnit: 'F'
       <div className="flex items-center gap-3">
         <span className="text-2xl">🌤️</span>
         <div>
-          <p className="font-medium">{favorite.location}</p>
+          <p className="font-medium">{cityName}</p>
           <p className="text-sm text-muted-foreground">
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin inline" />

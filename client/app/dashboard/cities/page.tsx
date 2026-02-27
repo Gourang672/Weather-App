@@ -47,8 +47,8 @@ function CityWeatherCard({
   tempUnit: 'F' | 'C'
   windUnit: 'mph' | 'kmh'
 }) {
-  const cityName = city.name?.trim() || ""
-  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName })
+  const cityName = (city?.name?.trim() || "").length > 0 ? city.name.trim() : ""
+  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName || cityName.length === 0 })
 
   const convertTemperature = (temp: number, unit: 'F' | 'C') => {
     if (unit === 'F') return Math.round((temp * 9/5) + 32)
