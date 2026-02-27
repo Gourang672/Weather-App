@@ -3,11 +3,12 @@
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Loader2, MapPin } from "lucide-react"
+import { Plus, Trash2, Loader2, MapPin, Star } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useCreateCityMutation, useGetCitiesQuery, useDeleteCityMutation } from "@/redux/apis/cityApi/cityApi"
 import { useGetWeatherQuery } from "@/redux/apis/weatherApi/weatherApi"
 import { useGetUserQuery } from "@/redux/apis/userApi/userApi"
+import { useCreateFavoriteMutation, useGetUserFavoritesQuery, useDeleteFavoriteMutation } from "@/redux/apis/favoriteApi/favoriteApi"
 import { getUserIdFromToken } from "@/lib/jwt-utils"
 import { toast } from "sonner"
 import locations from "@/data/locations.json"
@@ -29,14 +30,20 @@ const getWeatherIcon = (code: number | null | undefined) => {
 // City card component with weather data
 function CityWeatherCard({ 
   city, 
-  onDelete, 
+  onDelete,
+  onAddFavorite,
+  isFavorited,
   deleteLoading,
+  favoritesLoading,
   tempUnit,
   windUnit
 }: { 
   city: { _id: string; name: string; createdAt?: string }
   onDelete: (id: string) => void
+  onAddFavorite: (cityId: string) => void
+  isFavorited: boolean
   deleteLoading: boolean
+  favoritesLoading: boolean
   tempUnit: 'F' | 'C'
   windUnit: 'mph' | 'kmh'
 }) {
@@ -69,19 +76,34 @@ function CityWeatherCard({
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={() => onDelete(city._id)}
-          disabled={deleteLoading}
-        >
-          {deleteLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`${isFavorited ? 'text-yellow-500' : 'text-muted-foreground'} hover:text-yellow-500`}
+            onClick={() => onAddFavorite(city._id)}
+            disabled={favoritesLoading}
+          >
+            {favoritesLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Star className={`h-4 w-4 ${isFavorited ? 'fill-yellow-500' : ''}`} />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(city._id)}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -170,11 +192,20 @@ export default function CitiesPage() {
 
   const { data: user } = useGetUserQuery(userId!, { skip: !userId })
   const { data: cities, isLoading: citiesLoading, refetch } = useGetCitiesQuery()
+  const { data: userFavorites } = useGetUserFavoritesQuery()
   const [createCity, { isLoading: createLoading }] = useCreateCityMutation()
   const [deleteCity, { isLoading: deleteLoading }] = useDeleteCityMutation()
+  const [createFavorite, { isLoading: favoritesLoading }] = useCreateFavoriteMutation()
 
   const tempUnit = user?.tempUnit || 'F'
   const windUnit = user?.windUnit || 'mph'
+
+  // Create a set of favorite city IDs for quick lookup
+  const favoriteCityIds = new Set(
+    (userFavorites || []).map((fav: any) => 
+      typeof fav.city === 'object' ? fav.city._id : fav.city
+    )
+  )
 
   const locationData: Record<string, Record<string, string[]>> = locations as unknown as Record<string, Record<string, string[]>>
   const countries = Object.keys(locationData)
@@ -208,6 +239,17 @@ export default function CitiesPage() {
     } catch (error) {
       toast.error("Failed to remove city")
       console.error("Error removing city:", error)
+    }
+  }
+
+  const handleAddFavorite = async (cityId: string) => {
+    try {
+      await createFavorite({ cityId }).unwrap()
+      toast.success("Added to favorites!")
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.message || "Failed to add favorite"
+      toast.error(errorMessage)
+      console.error("Error adding favorite:", error)
     }
   }
 
@@ -299,7 +341,10 @@ export default function CitiesPage() {
               key={city._id}
               city={city}
               onDelete={handleDeleteCity}
+              onAddFavorite={handleAddFavorite}
+              isFavorited={favoriteCityIds.has(city._id)}
               deleteLoading={deleteLoading}
+              favoritesLoading={favoritesLoading}
               tempUnit={tempUnit}
               windUnit={windUnit}
             />

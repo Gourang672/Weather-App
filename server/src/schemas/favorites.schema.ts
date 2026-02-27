@@ -10,11 +10,8 @@ export class Favorite {
   @Prop({ type: Types.ObjectId, ref: Users.name, required: true })
   user: Types.ObjectId;
 
-  @Prop({ type: String, required: true })
-  location: string;
-
-  @Prop({ type: String, trim: true, default: null })
-  label?: string;
+  @Prop({ type: Types.ObjectId, ref: City.name, required: true })
+  city: Types.ObjectId;
 }
 
 export const FavoriteSchema = SchemaFactory.createForClass(Favorite);

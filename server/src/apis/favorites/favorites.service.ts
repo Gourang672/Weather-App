@@ -10,22 +10,22 @@ export class FavoritesService {
   constructor(@InjectModel(Favorite.name) private favoriteModel: Model<FavoriteDocument>) {}
 
   async create(createFavoriteDto: CreateFavoriteDto, userId: string) {
-    const created = new this.favoriteModel({ ...createFavoriteDto, user: userId });
-    return created.save();
+    const created = new this.favoriteModel({ city: createFavoriteDto.cityId, user: userId });
+    return (await created.save()).populate('city');
   }
 
   async findAll(userId: string) {
-    return this.favoriteModel.find({ user: userId }).exec();
+    return this.favoriteModel.find({ user: userId }).populate('city').exec();
   }
 
   async findOne(id: string, userId: string) {
-    const favorite = await this.favoriteModel.findOne({ _id: id, user: userId }).exec();
+    const favorite = await this.favoriteModel.findOne({ _id: id, user: userId }).populate('city').exec();
     if (!favorite) throw new Error('Favorite not found');
     return favorite;
   }
 
   async update(id: string, updateFavoriteDto: UpdateFavoriteDto, userId: string) {
-    return this.favoriteModel.findOneAndUpdate({ _id: id, user: userId }, updateFavoriteDto, { new: true }).exec();
+    return this.favoriteModel.findOneAndUpdate({ _id: id, user: userId }, updateFavoriteDto, { new: true }).populate('city').exec();
   }
 
   async remove(id: string, userId: string) {

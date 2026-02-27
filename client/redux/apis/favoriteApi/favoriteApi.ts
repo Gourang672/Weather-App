@@ -1,22 +1,26 @@
 import { baseApi } from '../baseApi';
 
+interface City {
+  _id: string;
+  name: string;
+  user: string;
+  createdAt?: string;
+}
+
 interface Favorite {
   _id: string;
   user: string;
-  location: string;
-  label?: string;
+  city: City;
   createdAt?: string;
 }
 
 interface CreateFavoritePayload {
-  location: string;
-  label?: string;
+  cityId: string;
 }
 
 interface UpdateFavoritePayload {
   id: string;
-  location?: string;
-  label?: string;
+  cityId?: string;
 }
 
 export const favoriteApi = baseApi.injectEndpoints({

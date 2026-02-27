@@ -146,7 +146,7 @@ export default function Chat({ initialOpen = false, position = 'bottom-right', p
           // Get most recent favorite
           if (favorites.length > 0) {
             const sorted = favorites.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            const recentCity = sorted[0]?.location
+            const recentCity = sorted[0]?.city?.name
             if (recentCity && cityOptions.includes(recentCity)) {
               setSelectedCity(recentCity)
             }

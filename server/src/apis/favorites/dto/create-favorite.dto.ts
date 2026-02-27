@@ -1,4 +1,3 @@
 export class CreateFavoriteDto {
-  location: string;
-  label?: string;
+  cityId: string;
 }

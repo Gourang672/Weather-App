@@ -1,17 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Star, MapPin, Plus, Trash2, Loader2 } from "lucide-react"
+import { Star, MapPin, Trash2, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useCreateFavoriteMutation, useGetUserFavoritesQuery, useDeleteFavoriteMutation } from "@/redux/apis/favoriteApi/favoriteApi"
+import { useGetUserFavoritesQuery, useDeleteFavoriteMutation } from "@/redux/apis/favoriteApi/favoriteApi"
 import { useGetWeatherQuery } from "@/redux/apis/weatherApi/weatherApi"
 import { useGetUserQuery } from "@/redux/apis/userApi/userApi"
 import { getUserIdFromToken } from "@/lib/jwt-utils"
 import { toast } from "sonner"
-import locations from "@/data/locations.json"
 
 // Weather icon based on weather code
 const getWeatherIcon = (code: number | null | undefined) => {
@@ -35,14 +31,14 @@ function FavoriteWeatherCard({
   tempUnit,
   windUnit
 }: { 
-  favorite: { _id: string; location: string; label?: string }
+  favorite: { _id: string; city: { _id: string; name: string }; createdAt?: string }
   onDelete: (id: string) => void
   deleteLoading: boolean
   tempUnit: 'F' | 'C'
   windUnit: 'mph' | 'kmh'
 }) {
-  const location = favorite.location?.trim() || ""
-  const { data: weather, isLoading, error } = useGetWeatherQuery(location, { skip: !location })
+  const cityName = favorite.city?.name?.trim() || ""
+  const { data: weather, isLoading, error } = useGetWeatherQuery(cityName, { skip: !cityName })
 
   const convertTemperature = (temp: number, unit: 'F' | 'C') => {
     if (unit === 'F') return Math.round((temp * 9/5) + 32)
@@ -64,10 +60,7 @@ function FavoriteWeatherCard({
         <div className="flex items-center gap-3">
           <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
           <div>
-            <h4 className="font-semibold text-lg">{favorite.location}</h4>
-            {favorite.label && (
-              <p className="text-sm text-muted-foreground">{favorite.label}</p>
-            )}
+            <h4 className="font-semibold text-lg">{favorite.city?.name}</h4>
             <p className="text-sm text-muted-foreground flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               {isLoading ? "Loading..." : weather?.location || "City"}
@@ -152,10 +145,6 @@ function FavoriteWeatherCard({
 }
 
 export default function FavoritesPage() {
-  const [selectedCountry, setSelectedCountry] = useState("")
-  const [selectedState, setSelectedState] = useState("")
-  const [selectedCity, setSelectedCity] = useState("")
-  const [label, setLabel] = useState("")
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -163,53 +152,12 @@ export default function FavoritesPage() {
     setUserId(id)
   }, [])
 
-  // Reset state and city when country changes
-  useEffect(() => {
-    setSelectedState("")
-    setSelectedCity("")
-  }, [selectedCountry])
-
-  // Reset city when state changes
-  useEffect(() => {
-    setSelectedCity("")
-  }, [selectedState])
-
   const { data: user } = useGetUserQuery(userId!, { skip: !userId })
   const { data: userFavorites, isLoading: favoritesLoading, refetch } = useGetUserFavoritesQuery()
-  const [createFavorite, { isLoading: createLoading }] = useCreateFavoriteMutation()
   const [deleteFavorite, { isLoading: deleteLoading }] = useDeleteFavoriteMutation()
 
   const tempUnit = user?.tempUnit || 'F'
   const windUnit = user?.windUnit || 'mph'
-
-  // Use local locations data (client/data/locations.json)
-  const locationData: Record<string, Record<string, string[]>> = locations as unknown as Record<string, Record<string, string[]>>
-  const countries = Object.keys(locationData)
-  const states: string[] = selectedCountry ? Object.keys(locationData[selectedCountry]) : []
-  const cities: string[] = selectedState && selectedCountry ? locationData[selectedCountry][selectedState] : []
-
-  const handleAddFavorite = async () => {
-    if (!selectedCity.trim()) {
-      toast.error("Please select a city")
-      return
-    }
-
-    try {
-      await createFavorite({
-        location: selectedCity,
-        label: label.trim() || ""
-      }).unwrap()
-      toast.success("Favorite added successfully!")
-      setSelectedCountry("")
-      setSelectedState("")
-      setSelectedCity("")
-      setLabel("")
-      refetch()
-    } catch (error) {
-      toast.error("Failed to add favorite")
-      console.error("Error adding favorite:", error)
-    }
-  }
 
   const handleDeleteFavorite = async (favoriteId: string) => {
     try {
@@ -229,87 +177,13 @@ export default function FavoritesPage() {
 
   return (
     <>
-      {/* Add Favorite Section */}
-      <div className="dashboard-card rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Add New Favorite</h3>
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="country-select">Country</Label>
-            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select country..." />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="state-select">State</Label>
-            <Select value={selectedState} onValueChange={setSelectedState} disabled={!selectedCountry}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select state..." />
-              </SelectTrigger>
-              <SelectContent>
-                {states.map((state) => (
-                  <SelectItem key={state} value={state}>
-                    {state}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="city-select">City</Label>
-            <Select value={selectedCity} onValueChange={setSelectedCity} disabled={!selectedState}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select city..." />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="label-input">Label (Optional)</Label>
-            <Input
-              id="label-input"
-              placeholder="e.g., Home, Work..."
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end mt-4">
-          <Button
-            onClick={handleAddFavorite}
-            disabled={createLoading || !selectedCity.trim()}
-          >
-            {createLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            {createLoading ? "Adding..." : "Add Favorite"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Favorites Header */}
+      {/* My Favorites Header */}
       <div className="dashboard-card rounded-xl p-6">
         <div className="flex items-center gap-3 mb-2">
           <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
-          <h3 className="text-lg font-semibold">Your Favorite Cities</h3>
+          <h3 className="text-lg font-semibold">My Favorites</h3>
         </div>
-        <p className="text-muted-foreground">Your most important weather locations at a glance</p>
+        <p className="text-muted-foreground">Your favorite cities added from the Cities tab</p>
       </div>
 
       {/* Favorites Grid */}
@@ -319,7 +193,7 @@ export default function FavoritesPage() {
         </div>
       ) : userFavorites && userFavorites.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sortedFavorites.map((favorite) => (
+          {sortedFavorites.map((favorite: any) => (
             <FavoriteWeatherCard
               key={favorite._id}
               favorite={favorite}
@@ -333,7 +207,7 @@ export default function FavoritesPage() {
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p>No favorites added yet. Add your first favorite above!</p>
+          <p>No favorites yet. Add favorites from the Cities tab!</p>
         </div>
       )}
     </>
