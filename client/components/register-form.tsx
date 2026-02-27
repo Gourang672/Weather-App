@@ -101,7 +101,7 @@ export function RegisterForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
-        <CardContent className="grid p-0 md:grid-cols-2">
+          <CardContent className="grid p-0">
           <form className="p-6 md:p-8" onSubmit={handleSubmit}>
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
@@ -230,13 +230,7 @@ export function RegisterForm({
               </FieldDescription>
             </FieldGroup>
           </form>
-          <div className="bg-muted relative hidden md:block">
-            <img
-              src="/auth.webp"
-              alt="Image"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </div>
+          
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Cloud, Sun, CloudRain } from "lucide-react"
+import { Cloud, Sun, CloudRain, Bot } from "lucide-react"
 
 export default function Home() {
   return (
@@ -38,7 +38,7 @@ export default function Home() {
           </div>
 
           {/* Features */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
               <Cloud className="h-12 w-12 mb-4 mx-auto" />
               <h3 className="text-xl font-semibold mb-2">Real-time Updates</h3>
@@ -53,6 +53,11 @@ export default function Home() {
               <CloudRain className="h-12 w-12 mb-4 mx-auto" />
               <h3 className="text-xl font-semibold mb-2">Weather Alerts</h3>
               <p className="text-blue-100">Stay safe with timely notifications about severe weather conditions.</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+              <Bot className="h-12 w-12 mb-4 mx-auto" />
+              <h3 className="text-xl font-semibold mb-2">AI Assistant</h3>
+              <p className="text-blue-100">Ask our AI for weather insights, forecasts, and personalized tips.</p>
             </div>
           </div>
         </div>

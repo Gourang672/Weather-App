@@ -9,6 +9,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
+import ChatWidget from '@/components/chat/chat'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -86,6 +87,7 @@ export default function DashboardLayout({
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {children}
         </div>
+        <ChatWidget initialOpen={false} position="bottom-right" />
       </SidebarInset>
     </SidebarProvider>
   )
