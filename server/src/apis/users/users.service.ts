@@ -20,6 +20,9 @@ export class UsersService {
       name: createUserDto.name,
       email: createUserDto.email,
       password: hashed,
+      location: createUserDto.location || '',
+      tempUnit: createUserDto.tempUnit || 'F',
+      windUnit: createUserDto.windUnit || 'mph',
     });
     return created.save();
   }
@@ -28,7 +31,7 @@ export class UsersService {
     return this.userModel.find().select('-password').exec();
   }
 
-  async findOne(id: number | string) {
+  async findOne(id: string) {
     const user = await this.userModel.findById(id).select('-password').exec();
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -38,16 +41,27 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     const payload: any = { ...updateUserDto };
     if (updateUserDto.password) {
       const saltRounds = 10;
       payload.password = await bcrypt.hash(updateUserDto.password, saltRounds);
     }
-    return this.userModel.findByIdAndUpdate(id as any, payload, { new: true }).select('-password').exec();
+    return this.userModel.findByIdAndUpdate(id, payload, { new: true }).select('-password').exec();
   }
 
-  async remove(id: number) {
-    return this.userModel.findByIdAndDelete(id as any).exec();
+  async remove(id: string) {
+    return this.userModel.findByIdAndDelete(id).exec();
+  }
+
+  async updatePassword(id: string, hashedPassword: string) {
+    const user = await this.userModel.findByIdAndUpdate(
+      id,
+      { password: hashedPassword },
+      { new: true }
+    ).select('-password').exec();
+    
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 }

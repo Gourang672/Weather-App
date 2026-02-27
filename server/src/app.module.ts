@@ -8,6 +8,7 @@ import { AuthModule } from './apis/auth/auth.module';
 import { FavoritesModule } from './apis/favorites/favorites.module';
 import { MailModule } from './apis/mail/mail.module';
 import { CityModule } from './apis/city/city.module';
+import { WeatherModule } from './apis/weather/weather.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CityModule } from './apis/city/city.module';
       FavoritesModule,
       MailModule,
       CityModule,
+      WeatherModule,
   ],
   controllers: [AppController],
   providers: [AppService],

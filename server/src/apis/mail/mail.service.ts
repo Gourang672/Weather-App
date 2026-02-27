@@ -69,12 +69,26 @@ export class MailService {
     }
   }
 
-  async sendOtpEmail(email: string, otp: string, expiryMinutes: number = 10): Promise<boolean> {
-    const subject = 'Your OTP for Login';
-    const html = await this.renderTemplate('otp', {
-      title: 'Login Verification',
+  async sendOtpEmail(email: string, otp: string, expiryMinutes: number = 5, type: string = 'login'): Promise<boolean> {
+    let subject: string;
+    let title: string;
+    let templateName: string;
+
+    if (type === 'password_reset') {
+      subject = 'Reset Your Password';
+      title = 'Password Reset Verification';
+      templateName = 'password-reset-otp';
+    } else {
+      subject = 'Your OTP for Login';
+      title = 'Login Verification';
+      templateName = 'otp';
+    }
+
+    const html = await this.renderTemplate(templateName, {
+      title,
       otp,
       expiryMinutes,
+      type,
     });
 
     return this.sendEmail({ to: email, subject, html });

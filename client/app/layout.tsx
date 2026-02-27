@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConditionalNavbar } from "@/components/conditional-navbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner"
+import { ReduxProvider } from "@/redux/storeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,17 +32,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-         >
-          <TooltipProvider>
-            <ConditionalNavbar />
-            {children}
-          </TooltipProvider>
-        </ThemeProvider>
+        <ReduxProvider>
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+           >
+            <TooltipProvider>
+              <ConditionalNavbar />
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   );

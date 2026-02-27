@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,49 +18,150 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
+import { toast } from "sonner"
+import { 
+  useRequestPasswordResetMutation, 
+  useVerifyPasswordResetOtpMutation, 
+  useResetPasswordMutation 
+} from "@/redux/apis/passwordResetApi/passwordResetApi"
 
 export function ForgotPasswordForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter()
   const [step, setStep] = useState<'email' | 'otp' | 'reset'>('email')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSendOTP = () => {
-    // Here you would send the OTP to the email
-    console.log('Sending OTP to:', email)
-    setStep('otp')
+  const [requestReset, { isLoading: isRequestLoading }] = useRequestPasswordResetMutation()
+  const [verifyOtp, { isLoading: isVerifyLoading }] = useVerifyPasswordResetOtpMutation()
+  const [resetPassword, { isLoading: isResetLoading }] = useResetPasswordMutation()
+
+  const getErrorMessage = (err: any): string => {
+    if (typeof err === 'string') return err
+    const httpStatus = err?.originalStatus
+    if (httpStatus === 400) return err?.data?.message || 'Invalid input'
+    if (httpStatus === 401) return err?.data?.message || 'Unauthorized'
+    if (httpStatus === 404) return 'User not found'
+    if (httpStatus === 422) return err?.data?.message || 'Validation error'
+    if (httpStatus === 500) return 'Server error. Please try again later.'
+    if (err?.status === 'FETCH_ERROR') return 'Network error. Please check your connection.'
+    if (err?.data?.message) return err.data.message
+    if (err?.data?.error) return err.data.error
+    return 'An error occurred. Please try again.'
   }
 
-  const handleVerifyOTP = () => {
-    // Here you would verify the OTP
-    console.log('Verifying OTP:', otp)
-    setStep('reset')
-  }
-
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (newPassword !== confirmPassword) {
-      alert('Passwords do not match')
+    setError(null)
+
+    if (!email) {
+      const msg = 'Please enter your email'
+      setError(msg)
+      toast.error(msg)
       return
     }
-    // Here you would reset the password
-    console.log('Resetting password for:', email)
-    // Then redirect to login
+
+    if (!email.includes('@')) {
+      const msg = 'Please enter a valid email'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    try {
+      await requestReset({ email }).unwrap()
+      setStep('otp')
+      toast.success('OTP sent to your email')
+    } catch (err) {
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
+  }
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (otp.length !== 6) {
+      const msg = 'Please enter a valid 6-digit code'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    try {
+      await verifyOtp({ email, code: otp }).unwrap()
+      setStep('reset')
+      toast.success('OTP verified successfully')
+    } catch (err) {
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    // Validation
+    if (!newPassword) {
+      const msg = 'Please enter a new password'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    if (newPassword.length < 6) {
+      const msg = 'Password must be at least 6 characters'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    if (!confirmPassword) {
+      const msg = 'Please confirm your password'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      const msg = 'Passwords do not match'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    try {
+      await resetPassword({ email, newPassword }).unwrap()
+      toast.success('Password reset successfully!')
+      router.push('/login')
+    } catch (err) {
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
   }
 
   const handleBack = () => {
     if (step === 'otp') {
       setStep('email')
       setOtp('')
+      setError(null)
     } else if (step === 'reset') {
       setStep('otp')
       setNewPassword('')
       setConfirmPassword('')
+      setError(null)
     }
   }
 
@@ -82,8 +184,15 @@ export function ForgotPasswordForm({
               </p>
             </div>
 
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive flex items-center justify-between">
+                <span>{error}</span>
+                <button onClick={() => setError(null)} className="ml-2 text-lg">×</button>
+              </div>
+            )}
+
             {step === 'email' ? (
-              <>
+              <form onSubmit={handleSendOTP}>
                 <Field>
                   <FieldLabel htmlFor="email">Email</FieldLabel>
                   <Input
@@ -95,14 +204,14 @@ export function ForgotPasswordForm({
                     required
                   />
                 </Field>
-                <Field>
-                  <Button type="button" onClick={handleSendOTP} className="w-full">
-                    Send Reset Code
+                <Field className="mt-6">
+                  <Button type="submit" className="w-full" disabled={isRequestLoading}>
+                    {isRequestLoading ? 'Sending OTP...' : 'Send Reset Code'}
                   </Button>
                 </Field>
-              </>
+              </form>
             ) : step === 'otp' ? (
-              <>
+              <form onSubmit={handleVerifyOTP}>
                 <Field>
                   <InputOTP
                     maxLength={6}
@@ -122,9 +231,13 @@ export function ForgotPasswordForm({
                     </InputOTPGroup>
                   </InputOTP>
                 </Field>
-                <Field>
-                  <Button type="button" onClick={handleVerifyOTP} className="w-full">
-                    Verify Code
+                <Field className="mt-6">
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isVerifyLoading || otp.length !== 6}
+                  >
+                    {isVerifyLoading ? 'Verifying...' : 'Verify Code'}
                   </Button>
                 </Field>
                 <Field>
@@ -137,7 +250,7 @@ export function ForgotPasswordForm({
                     Back to Email
                   </Button>
                 </Field>
-              </>
+              </form>
             ) : (
               <form onSubmit={handleResetPassword}>
                 <Field>
@@ -164,17 +277,29 @@ export function ForgotPasswordForm({
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </Field>
                 <Field className="mt-6">
-                  <Button type="submit" className="w-full">
-                    Reset Password
+                  <Button type="submit" className="w-full" disabled={isResetLoading}>
+                    {isResetLoading ? 'Resetting...' : 'Reset Password'}
                   </Button>
                 </Field>
                 <Field>

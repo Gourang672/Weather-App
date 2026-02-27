@@ -2,6 +2,7 @@
 
 import { type LucideIcon } from "lucide-react"
 
+import Link from "next/link"
 import {
   SidebarGroup,
   SidebarMenu,
@@ -25,10 +26,12 @@ export function NavMain({
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
-              <a href={item.url}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
-              </a>
+              <Link href={item.url}>
+                <>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

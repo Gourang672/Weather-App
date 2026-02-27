@@ -1,20 +1,19 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import {
-  Bot,
+  Heart,
+  LayoutDashboard,
   Map,
   Settings2,
-  SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
@@ -30,8 +29,7 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: SquareTerminal,
-      isActive: true,
+      icon: LayoutDashboard,
     },
     {
       title: "Cities",
@@ -41,7 +39,7 @@ const data = {
     {
       title: "Favorites",
       url: "/dashboard/favorites",
-      icon: Bot,
+      icon: Heart,
     },
     {
       title: "Settings",
@@ -52,13 +50,21 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
+
+  // Make nav items dynamic based on current path
+  const navMainWithActive = data.navMain.map(item => ({
+    ...item,
+    isActive: pathname === item.url,
+  }))
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <NavUser user={data.user} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMainWithActive} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

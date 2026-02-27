@@ -1,26 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
+import { City, CityDocument } from '../../schemas/city.schema';
 
 @Injectable()
 export class CityService {
-  create(createCityDto: CreateCityDto) {
-    return 'This action adds a new city';
+  constructor(@InjectModel(City.name) private cityModel: Model<CityDocument>) {}
+
+  async create(createCityDto: CreateCityDto, userId: string) {
+    const created = new this.cityModel({ ...createCityDto, user: userId });
+    return created.save();
   }
 
-  findAll() {
-    return `This action returns all city`;
+  async findAll(userId: string) {
+    return this.cityModel.find({ user: userId }).exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} city`;
+  async findOne(id: string, userId: string) {
+    const city = await this.cityModel.findOne({ _id: id, user: userId }).exec();
+    if (!city) throw new Error('City not found');
+    return city;
   }
 
-  update(id: number, updateCityDto: UpdateCityDto) {
-    return `This action updates a #${id} city`;
+  async update(id: string, updateCityDto: UpdateCityDto, userId: string) {
+    return this.cityModel.findOneAndUpdate({ _id: id, user: userId }, updateCityDto, { new: true }).exec();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} city`;
+  async remove(id: string, userId: string) {
+    return this.cityModel.findOneAndDelete({ _id: id, user: userId }).exec();
   }
 }

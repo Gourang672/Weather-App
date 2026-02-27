@@ -16,6 +16,9 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
+import { useRouter } from "next/navigation"
+import { useLoginMutation, useVerifyOtpMutation } from "@/redux/apis/authApi/authApi"
+import { toast } from "sonner"
 
 export function LoginForm({
   className,
@@ -24,19 +27,121 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials')
   const [otp, setOtp] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const handleCredentialsSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Here you would verify credentials and send OTP
-    console.log('Verifying credentials and sending OTP')
-    setStep('otp')
+  const [login, { isLoading: isLoginLoading }] = useLoginMutation()
+  const [verifyOtp, { isLoading: isVerifyLoading }] = useVerifyOtpMutation()
+
+  const getErrorMessage = (err: any): string => {
+    // Handle string errors
+    if (typeof err === 'string') return err
+
+    // Handle RTK Query errors with status codes
+    const status = err?.status
+    
+    if (status === 'FETCH_ERROR') {
+      return 'Network error. Please check your connection.'
+    }
+    
+    // Handle HTTP status codes
+    const httpStatus = err?.originalStatus
+    if (httpStatus === 400) {
+      return err?.data?.message || 'Invalid input. Please check your details.'
+    }
+    if (httpStatus === 401) {
+      return err?.data?.message || 'Invalid email or password'
+    }
+    if (httpStatus === 422) {
+      return err?.data?.message || 'Validation error. Please check your input.'
+    }
+    if (httpStatus === 429) {
+      return 'Too many attempts. Please try again later.'
+    }
+    if (httpStatus === 500) {
+      return 'Server error. Please try again later.'
+    }
+    if (httpStatus && httpStatus >= 400 && httpStatus < 500) {
+      return err?.data?.message || 'Request failed. Please try again.'
+    }
+    if (httpStatus && httpStatus >= 500) {
+      return 'Server error. Please try again later.'
+    }
+
+    // Fallback to data.message or data.error
+    if (err?.data?.message) return err.data.message
+    if (err?.data?.error) return err.data.error
+    
+    return 'An error occurred. Please try again.'
   }
 
-  const handleOTPSubmit = (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would verify OTP
-    console.log('Verifying OTP:', otp)
-    // Then login
+    setError(null)
+
+    // Validation
+    if (!email || !password) {
+      const msg = 'Please fill in all fields'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    if (!email.includes('@')) {
+      const msg = 'Please enter a valid email'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    if (password.length < 6) {
+      const msg = 'Password must be at least 6 characters'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    try {
+      const result = await login({ email, password }).unwrap()
+      setStep('otp')
+      toast.success('OTP sent to your email')
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
+  }
+
+  const handleOTPSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (otp.length !== 6) {
+      const msg = 'Please enter a valid 6-digit code'
+      setError(msg)
+      toast.error(msg)
+      return
+    }
+
+    try {
+      const result = await verifyOtp({ email, code: otp }).unwrap()
+      
+      if (!result.access_token) {
+        throw new Error('No access token in response')
+      }
+
+      localStorage.setItem('access_token', result.access_token)
+      document.cookie = `access_token=${result.access_token}; path=/; max-age=86400`
+      
+      toast.success('Login successful!')
+      router.push('/dashboard')
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
   }
 
   const handleBack = () => {
@@ -62,6 +167,13 @@ export function LoginForm({
                 </p>
               </div>
 
+              {error && (
+                <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive flex items-center justify-between">
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} className="ml-2 text-lg">×</button>
+                </div>
+              )}
+
               {step === 'credentials' ? (
                 <>
                   <Field>
@@ -71,6 +183,8 @@ export function LoginForm({
                       type="email"
                       placeholder="m@example.com"
                       required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
                   </Field>
                   <Field>
@@ -89,6 +203,8 @@ export function LoginForm({
                         type={showPassword ? "text" : "password"}
                         required
                         className="pr-10"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                       />
                       <Button
                         type="button"
@@ -102,7 +218,9 @@ export function LoginForm({
                     </div>
                   </Field>
                   <Field>
-                    <Button type="submit">Continue</Button>
+                    <Button type="submit" disabled={isLoginLoading}>
+                      {isLoginLoading ? 'Sending OTP...' : 'Continue'}
+                    </Button>
                   </Field>
                 </>
               ) : (
@@ -127,7 +245,9 @@ export function LoginForm({
                     </InputOTP>
                   </Field>
                   <Field>
-                    <Button type="submit">Login</Button>
+                    <Button type="submit" disabled={isVerifyLoading || otp.length !== 6}>
+                      {isVerifyLoading ? 'Verifying...' : 'Login'}
+                    </Button>
                   </Field>
                   <Field>
                     <Button

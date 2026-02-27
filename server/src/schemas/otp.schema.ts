@@ -17,6 +17,9 @@ export class Otp {
 
   @Prop({ type: Boolean, default: false })
   used?: boolean;
+
+  @Prop({ type: String, required: false })
+  type?: string;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
